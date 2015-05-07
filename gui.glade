@@ -37,7 +37,7 @@
         <property name="row_homogeneous">True</property>
         <property name="column_homogeneous">True</property>
         <child>
-          <object class="GtkTreeView" id="treeview1">
+          <object class="GtkTreeView" id="treeView">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="model">liststore1</property>
