@@ -62,13 +62,21 @@ createTreeView builder = do
     treeSelectionSetMode treeSelection  SelectionSingle
     on treeSelection treeSelectionSelectionChanged (nodeSelected treeStore treeSelection)
     on treeView buttonPressEvent (tryEvent (do button <- eventButton
-                                               theTime <- eventTime
+                                               time <- eventTime
+                                               pos <- eventCoordinates
                                                case button of
-                                                    RightButton -> liftIO (mouseButtonPressed theTime)
+                                                    RightButton -> liftIO (mouseButtonPressed time pos treeView)
                                             ))
 
-mouseButtonPressed :: TimeStamp -> IO ()
-mouseButtonPressed theTime = do
+--mouseButtonPressed :: TimeStamp -> IO ()
+mouseButtonPressed time pos treeView = do
+    let (x,y) = pos
+    pathInfo <- treeViewGetPathAtPos treeView (floor x, floor y)
+    sel <- treeViewGetSelection treeView
+    case pathInfo of
+        Just (path, _, _) -> do
+            treeSelectionSelectPath sel path
+
     menu <- menuNew
     menuItem <- menuItemNewWithLabel "Add 3D object"
     on menuItem menuItemActivated (putStrLn "3D object added")
@@ -77,7 +85,7 @@ mouseButtonPressed theTime = do
     on menuItem menuItemActivated (putStrLn "Transformation added")
     menuShellAppend menu menuItem
     widgetShowAll menu
-    menuPopup menu (Just (RightButton, theTime))
+    menuPopup menu Nothing --(Just (RightButton, time))
 
 nodeSelected treeStore treeSelection = do
     maybeTreeIter <- treeSelectionGetSelected treeSelection
