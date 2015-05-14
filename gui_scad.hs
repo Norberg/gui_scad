@@ -145,11 +145,3 @@ nodeSelected treeStore treeSelection = do
             treePath <- treeModelGetPath treeStore treeIter
             value <- treeStoreGetValue treeStore treePath
             putStrLn $ "Selected node:" ++ show (value)
-    
-
-oneSelection :: ListStore String -> TreeSelection ->  IO ()
-oneSelection list tree = do
-   sel <- treeSelectionGetSelectedRows tree
-   let s = head  (head sel)
-   v <- listStoreGetValue list s
-   putStrLn $ "selected " ++ v
