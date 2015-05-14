@@ -15,7 +15,8 @@ data Gui = Gui
     {
         _builder :: Builder,
         _treeStore :: TreeStore Scad,
-        _treeView :: TreeView
+        _treeView :: TreeView,
+        _menu :: IORef (Maybe Menu) -- Hack to make sure that the GC(?) will not remove the menu when used
     }
 
 main = do
@@ -38,8 +39,9 @@ main = do
     treeStore <- treeStoreNew forest
     
     treeView <- builderGetObject builder castToTreeView "treeView"
+    menu <- newIORef Nothing
 
-    let gui = Gui builder treeStore treeView
+    let gui = Gui builder treeStore treeView menu
     
     createTreeView gui
 
@@ -84,27 +86,57 @@ createTreeView gui = do
 --mouseButtonPressed :: TimeStamp -> IO ()
 mouseButtonPressed time pos gui = do
     let treeView = _treeView gui
+    let menuIORef = _menu gui
     let (x,y) = pos
     pathInfo <- treeViewGetPathAtPos treeView (floor x, floor y)
     sel <- treeViewGetSelection treeView
     case pathInfo of
         Just (path, _, _) -> do
-            treeSelectionSelectPath sel path
-            
+            treeSelectionSelectPath sel path 
             menu <- menuNew
-            menuItem <- menuItemNewWithLabel "Add 3D object"
-            on menuItem menuItemActivated (addNode gui path (Cube 3.0))
-            menuShellAppend menu menuItem
-            menuItem <- menuItemNewWithLabel "Add Transformations"
-            on menuItem menuItemActivated (putStrLn "Transformation added")
-            menuShellAppend menu menuItem
+            writeIORef menuIORef (Just menu)
+
+            subMenu <- createSubMenu menu "Add 3D Object"
+            addMenuItem subMenu "Sphere" (addNode gui path (Sphere 1.0))
+            addMenuItem subMenu "Cube" (addNode gui path (Cube 1.0))
+            addMenuItem subMenu "Cylinder" (addNode gui path (Cylinder 1.0 1.0 True))
+
+            subMenu <- createSubMenu menu "Add Transformation"
+            addMenuItem subMenu "Translate" (addNode gui path (Translate 0 0 0))
+            addMenuItem subMenu "Rotate" (addNode gui path (Rotate 0 0 0))
+            
+            subMenu <- createSubMenu menu "Add Boolean Operation"
+            addMenuItem subMenu "Union" (addNode gui path (Union))
+            addMenuItem subMenu "Difference" (addNode gui path (Difference))
+            addMenuItem subMenu "Intersection" (addNode gui path (Intersection))
+
+            addMenuItem menu "Delete Node" (deleteNode gui path)
+            
             widgetShowAll menu
-            menuPopup menu Nothing --(Just (RightButton, time))
+            menuPopup menu (Just (RightButton, time))
+
+
+
+createSubMenu parentMenu label = do
+    menuItem <- menuItemNewWithLabel label
+    menuShellAppend parentMenu menuItem
+    subMenu <- menuNew
+    menuItemSetSubmenu menuItem subMenu
+    return subMenu
+
+addMenuItem menu label callback = do
+    menuItem <- menuItemNewWithLabel label
+    on menuItem menuItemActivated callback
+    menuShellAppend menu menuItem
 
 addNode gui path node = do
     let treeStore = _treeStore gui
     treeStoreInsert treeStore path 0 node
-    putStrLn "dummy"
+
+deleteNode gui path = do
+    let treeStore = _treeStore gui
+    treeStoreRemove treeStore path
+    return () 
 
 nodeSelected treeStore treeSelection = do
     maybeTreeIter <- treeSelectionGetSelected treeSelection
