@@ -10,7 +10,8 @@ data Scad = Sphere Radius
           | Difference
           | Intersection
           | Translate X Y Z
-          | Rotate X Y Z deriving(Show)
+          | Rotate X Y Z 
+          | Root deriving(Show)
 
 
 type Radius = Float

@@ -34,8 +34,8 @@ main = do
     btnSave <- builderGetObject builder castToButton "btnSave"
     on btnSave buttonActivated (save builder)
     
-    let tree = Node  Union [Node (Sphere 1.0) [], Node (Cube 2.0) []]
-    let forest = [tree, tree]
+    let tree = Node Root [Node (Sphere 1.0) [], Node (Cube 2.0) []]
+    let forest = [tree]
     treeStore <- treeStoreNew forest
     
     treeView <- builderGetObject builder castToTreeView "treeView"
@@ -114,7 +114,7 @@ mouseButtonPressed time pos gui = do
             
             widgetShowAll menu
             menuPopup menu (Just (RightButton, time))
-
+        otherwise -> return ()
 
 
 createSubMenu parentMenu label = do
@@ -145,3 +145,4 @@ nodeSelected treeStore treeSelection = do
             treePath <- treeModelGetPath treeStore treeIter
             value <- treeStoreGetValue treeStore treePath
             putStrLn $ "Selected node:" ++ show (value)
+        otherwise -> return ()
