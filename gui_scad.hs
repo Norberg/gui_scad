@@ -86,6 +86,7 @@ createTreeView gui = do
 --mouseButtonPressed :: TimeStamp -> IO ()
 mouseButtonPressed time pos gui = do
     let treeView = _treeView gui
+    let treeStore = _treeStore gui
     let menuIORef = _menu gui
     let (x,y) = pos
     pathInfo <- treeViewGetPathAtPos treeView (floor x, floor y)
@@ -93,41 +94,74 @@ mouseButtonPressed time pos gui = do
     case pathInfo of
         Just (path, _, _) -> do
             treeSelectionSelectPath sel path 
+            node <- treeStoreGetValue treeStore path
             menu <- menuNew
             writeIORef menuIORef (Just menu)
 
-            subMenu <- createSubMenu menu "Add 3D Object"
-            addMenuItem subMenu "Sphere" (addNode gui path (Sphere 1.0))
-            addMenuItem subMenu "Cube" (addNode gui path (Cube 1.0))
-            addMenuItem subMenu "Cylinder" (addNode gui path (Cylinder 1.0 1.0 True))
+            let add3dObjectAllowed = isMenuActionAllowed Add3Object node
+            subMenu <- createSubMenu menu "Add 3D Object" add3dObjectAllowed
+            addMenuItem subMenu "Sphere" True (addNode gui path (Sphere 1.0))
+            addMenuItem subMenu "Cube" True (addNode gui path (Cube 1.0))
+            addMenuItem subMenu "Cylinder" True (addNode gui path (Cylinder 1.0 1.0 True))
 
-            subMenu <- createSubMenu menu "Add Transformation"
-            addMenuItem subMenu "Translate" (addNode gui path (Translate 0 0 0))
-            addMenuItem subMenu "Rotate" (addNode gui path (Rotate 0 0 0))
+            let addTransformationAllowed = isMenuActionAllowed AddTransformation node
+            subMenu <- createSubMenu menu "Add Transformation" addTransformationAllowed
+            addMenuItem subMenu "Translate" True (addNode gui path (Translate 0 0 0))
+            addMenuItem subMenu "Rotate" True (addNode gui path (Rotate 0 0 0))
             
-            subMenu <- createSubMenu menu "Add Boolean Operation"
-            addMenuItem subMenu "Union" (addNode gui path (Union))
-            addMenuItem subMenu "Difference" (addNode gui path (Difference))
-            addMenuItem subMenu "Intersection" (addNode gui path (Intersection))
+            let addBooleanAllowed = isMenuActionAllowed AddBooleanOperation node
+            subMenu <- createSubMenu menu "Add Boolean Operation" addBooleanAllowed
+            addMenuItem subMenu "Union" True (addNode gui path (Union))
+            addMenuItem subMenu "Difference" True (addNode gui path (Difference)) 
+            addMenuItem subMenu "Intersection" True (addNode gui path (Intersection))
 
-            addMenuItem menu "Delete Node" (deleteNode gui path)
-            
+            let deleteAllowed = isMenuActionAllowed DeleteNode node
+            addMenuItem menu "Delete Node" deleteAllowed (deleteNode gui path)
+
             widgetShowAll menu
             menuPopup menu (Just (RightButton, time))
         otherwise -> return ()
 
+data MenuAction = Add3Object | AddTransformation | AddBooleanOperation | DeleteNode
 
-createSubMenu parentMenu label = do
+
+isMenuActionAllowed :: MenuAction -> Scad -> Bool
+isMenuActionAllowed DeleteNode Root = False
+isMenuActionAllowed DeleteNode _ = True
+isMenuActionAllowed _ (Sphere _) = False 
+isMenuActionAllowed _ (Cube _) = False 
+isMenuActionAllowed _ (Cylinder _ _ _) = False 
+isMenuActionAllowed _ _ = True
+
+
+createSubMenu parentMenu label enabled = do
     menuItem <- menuItemNewWithLabel label
     menuShellAppend parentMenu menuItem
     subMenu <- menuNew
-    menuItemSetSubmenu menuItem subMenu
+    case enabled of
+        True -> do
+            menuItemSetSubmenu menuItem subMenu
+        False -> do
+            disableChildWidget menuItem
+            
     return subMenu
+            
 
-addMenuItem menu label callback = do
+addMenuItem menu label enabled callback = do
     menuItem <- menuItemNewWithLabel label
-    on menuItem menuItemActivated callback
     menuShellAppend menu menuItem
+    case enabled of
+        True -> do
+            on menuItem menuItemActivated callback
+            return ()
+        False -> do
+            disableChildWidget menuItem
+
+disableChildWidget bin = do
+    maybeWidget  <- binGetChild bin
+    case maybeWidget of
+        Just widget -> do       
+            widgetSetSensitive widget False
 
 addNode gui path node = do
     let treeStore = _treeStore gui
