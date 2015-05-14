@@ -1,5 +1,6 @@
 import Data.Tree
 import Data.Maybe
+import Data.IORef
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Builder
@@ -8,6 +9,14 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad
 
 import ScadDSL
+
+
+data Gui = Gui
+    {
+        _builder :: Builder,
+        _treeStore :: TreeStore Scad,
+        _treeView :: TreeView
+    }
 
 main = do
     initGUI
@@ -23,8 +32,16 @@ main = do
 
     btnSave <- builderGetObject builder castToButton "btnSave"
     on btnSave buttonActivated (save builder)
+    
+    let tree = Node  Union [Node (Sphere 1.0) [], Node (Cube 2.0) []]
+    let forest = [tree, tree]
+    treeStore <- treeStoreNew forest
+    
+    treeView <- builderGetObject builder castToTreeView "treeView"
 
-    createTreeView builder
+    let gui = Gui builder treeStore treeView
+    
+    createTreeView gui
 
     widgetShowAll winMain
     mainGUI
@@ -41,15 +58,11 @@ save builder = do
     valueName <- entryGetText txtName
     putStrLn valueName
 
---createTreeView :: Builder -> IO (ConnectId TreeSelection)
-createTreeView builder = do
-    treeView <- builderGetObject builder castToTreeView "treeView"
+createTreeView gui = do
+    let treeStore = _treeStore gui
+    let builder = _builder gui
+    let treeView = _treeView gui
 
-    --let tree = Node "A" [Node "B" [], Node "C" [Node "D" [], Node "E" []]]
-    let tree = Node  Union [Node (Sphere 1.0) [], Node (Cube 2.0) []]
-    let forest = [tree, tree]
-
-    treeStore <- treeStoreNew forest
     treeViewSetModel treeView treeStore
 
     col <- treeViewColumnNew
@@ -65,34 +78,41 @@ createTreeView builder = do
                                                time <- eventTime
                                                pos <- eventCoordinates
                                                case button of
-                                                    RightButton -> liftIO (mouseButtonPressed time pos treeView)
+                                                    RightButton -> liftIO (mouseButtonPressed time pos gui)
                                             ))
 
 --mouseButtonPressed :: TimeStamp -> IO ()
-mouseButtonPressed time pos treeView = do
+mouseButtonPressed time pos gui = do
+    let treeView = _treeView gui
     let (x,y) = pos
     pathInfo <- treeViewGetPathAtPos treeView (floor x, floor y)
     sel <- treeViewGetSelection treeView
     case pathInfo of
         Just (path, _, _) -> do
             treeSelectionSelectPath sel path
+            
+            menu <- menuNew
+            menuItem <- menuItemNewWithLabel "Add 3D object"
+            on menuItem menuItemActivated (addNode gui path (Cube 3.0))
+            menuShellAppend menu menuItem
+            menuItem <- menuItemNewWithLabel "Add Transformations"
+            on menuItem menuItemActivated (putStrLn "Transformation added")
+            menuShellAppend menu menuItem
+            widgetShowAll menu
+            menuPopup menu Nothing --(Just (RightButton, time))
 
-    menu <- menuNew
-    menuItem <- menuItemNewWithLabel "Add 3D object"
-    on menuItem menuItemActivated (putStrLn "3D object added")
-    menuShellAppend menu menuItem
-    menuItem <- menuItemNewWithLabel "Add Transformations"
-    on menuItem menuItemActivated (putStrLn "Transformation added")
-    menuShellAppend menu menuItem
-    widgetShowAll menu
-    menuPopup menu Nothing --(Just (RightButton, time))
+addNode gui path node = do
+    let treeStore = _treeStore gui
+    treeStoreInsert treeStore path 0 node
+    putStrLn "dummy"
 
 nodeSelected treeStore treeSelection = do
     maybeTreeIter <- treeSelectionGetSelected treeSelection
-    let treeIter = fromJust maybeTreeIter
-    treePath <- treeModelGetPath treeStore treeIter
-    value <- treeStoreGetValue treeStore treePath
-    putStrLn $ "Selected node:" ++ show (value)
+    case maybeTreeIter of
+        Just treeIter -> do
+            treePath <- treeModelGetPath treeStore treeIter
+            value <- treeStoreGetValue treeStore treePath
+            putStrLn $ "Selected node:" ++ show (value)
     
 
 oneSelection :: ListStore String -> TreeSelection ->  IO ()
