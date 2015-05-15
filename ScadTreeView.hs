@@ -34,6 +34,7 @@ isScadNodeMovable :: Scad -> Bool
 isScadNodeMovable Root = False
 isScadNodeMovable _ = True
 
+createEmptyTreeStore :: IO (TreeStore Scad)
 createEmptyTreeStore = do
     let tree = Node Root [Node (Sphere 1.0) [], Node (Cube 2.0) []]
     let forest = [tree]
@@ -42,6 +43,7 @@ createEmptyTreeStore = do
                         (Just treeStoreDragDestIface) 
     return treeStore    
 
+createTreeView :: Gui -> IO(ConnectId TreeView)
 createTreeView gui = do
     let treeStore = _treeStore gui
     let treeView = _treeView gui
@@ -65,7 +67,7 @@ createTreeView gui = do
                                                     _ -> stopEvent
                                             ))
 
-
+createSubMenu :: Menu -> String -> Bool -> IO(Menu)
 createSubMenu parentMenu label enabled = do
     menuItem <- menuItemNewWithLabel label
     menuShellAppend parentMenu menuItem
@@ -78,7 +80,7 @@ createSubMenu parentMenu label enabled = do
             
     return subMenu
             
-
+addMenuItem :: Menu -> String -> Bool -> IO() -> IO()
 addMenuItem menu label enabled callback = do
     menuItem <- menuItemNewWithLabel label
     menuShellAppend menu menuItem
@@ -89,6 +91,7 @@ addMenuItem menu label enabled callback = do
         False -> do
             disableChildWidget menuItem
 
+disableChildWidget :: BinClass bin => bin -> IO()
 disableChildWidget bin = do
     maybeWidget  <- binGetChild bin
     case maybeWidget of
@@ -96,15 +99,18 @@ disableChildWidget bin = do
             widgetSetSensitive widget False
         Nothing -> return ()
 
+addNode :: Gui -> TreePath -> Scad -> IO()
 addNode gui path node = do
     let treeStore = _treeStore gui
     treeStoreInsert treeStore path 0 node
 
+deleteNode :: Gui -> TreePath -> IO()
 deleteNode gui path = do
     let treeStore = _treeStore gui
     treeStoreRemove treeStore path
     return () 
 
+mouseButtonPressed :: TimeStamp -> (Double, Double) -> Gui -> IO()
 mouseButtonPressed time pos gui = do
     let treeView = _treeView gui
     let treeStore = _treeStore gui
@@ -144,6 +150,7 @@ mouseButtonPressed time pos gui = do
         Nothing -> return ()
 
 
+nodeSelected :: TreeStore Scad -> TreeSelection -> IO()
 nodeSelected treeStore treeSelection = do
     maybeTreeIter <- treeSelectionGetSelected treeSelection
     case maybeTreeIter of

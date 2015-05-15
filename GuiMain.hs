@@ -4,6 +4,7 @@ import Data.IORef
 import Gui
 import ScadTreeView
 
+main :: IO()
 main = do
     initGUI
 
