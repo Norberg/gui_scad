@@ -1,6 +1,7 @@
 import Data.Tree
 import Data.Maybe
 import Data.IORef
+import Data.List
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Builder
@@ -36,8 +37,10 @@ main = do
     
     let tree = Node Root [Node (Sphere 1.0) [], Node (Cube 2.0) []]
     let forest = [tree]
-    treeStore <- treeStoreNew forest
-    
+    treeStore <- treeStoreNewDND forest 
+                        (Just treeStoreDragSourceIface)
+                        (Just treeStoreDragDestIface) 
+
     treeView <- builderGetObject builder castToTreeView "treeView"
     menu <- newIORef Nothing
 
@@ -47,6 +50,48 @@ main = do
 
     widgetShowAll winMain
     mainGUI
+
+treeStoreDragSourceIface :: DragSourceIface TreeStore Scad
+treeStoreDragSourceIface = DragSourceIface {
+    treeDragSourceRowDraggable = \treeStore src -> do
+        node <- treeStoreGetValue treeStore src
+        return (isScadNodeMovable node),
+    treeDragSourceDragDataGet = treeSetRowDragData,
+    treeDragSourceDragDataDelete = \model dest@(_:_) -> do
+            liftIO $ treeStoreRemove model dest
+            return True
+
+  }
+
+treeStoreDragDestIface :: DragDestIface TreeStore Scad
+treeStoreDragDestIface = DragDestIface {
+    treeDragDestRowDropPossible = \model dest -> do
+        mModelPath <- treeGetRowDragData
+        case mModelPath of
+            Nothing -> return False
+            Just (model', source) -> 
+                if (toTreeModel model/=toTreeModel model') then return False
+                else liftIO $ do
+                    case (init dest) of
+                        (x:xs) -> do
+                            putStrLn ((show dest) ++ " " ++ (show source))
+                            if (isPrefixOf source dest) then return False
+                            else do
+                                valueParrentDest <- treeStoreGetValue model (init dest)
+                                putStrLn ("parrent:" ++ show valueParrentDest)
+                                return (isMenuActionAllowed Move valueParrentDest)
+                        otherwise -> return False,
+    treeDragDestDragDataReceived = \model dest@(_:_) -> do
+      mModelPath <- treeGetRowDragData
+      case mModelPath of
+        Nothing -> return False
+        Just (model', source@(_:_)) ->
+          if toTreeModel model/=toTreeModel model' then return False
+          else liftIO $ do
+            row <- treeStoreGetTree model source
+            treeStoreInsertTree model (init dest) (last dest) row
+            return True
+  }
 
 
 save :: Builder -> IO()
@@ -66,7 +111,7 @@ createTreeView gui = do
     let treeView = _treeView gui
 
     treeViewSetModel treeView treeStore
-
+    treeViewSetReorderable treeView True
     col <- treeViewColumnNew
     renderer <- cellRendererTextNew
     cellLayoutPackStart col renderer False
@@ -122,7 +167,11 @@ mouseButtonPressed time pos gui = do
             menuPopup menu (Just (RightButton, time))
         otherwise -> return ()
 
-data MenuAction = Add3Object | AddTransformation | AddBooleanOperation | DeleteNode
+data MenuAction = Add3Object 
+                | AddTransformation
+                | AddBooleanOperation 
+                | DeleteNode
+                | Move
 
 
 isMenuActionAllowed :: MenuAction -> Scad -> Bool
@@ -132,6 +181,10 @@ isMenuActionAllowed _ (Sphere _) = False
 isMenuActionAllowed _ (Cube _) = False 
 isMenuActionAllowed _ (Cylinder _ _ _) = False 
 isMenuActionAllowed _ _ = True
+
+isScadNodeMovable :: Scad -> Bool
+isScadNodeMovable Root = False
+isScadNodeMovable _ = True
 
 
 createSubMenu parentMenu label enabled = do
