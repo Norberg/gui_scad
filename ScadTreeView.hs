@@ -63,7 +63,7 @@ createTreeView gui = do
                                                time <- eventTime
                                                pos <- eventCoordinates
                                                case button of
-                                                    RightButton -> liftIO (mouseButtonPressed time pos gui)
+                                                    RightButton -> liftIO (handleMouseButtonPressed time pos gui)
                                                     _ -> stopEvent
                                             ))
 
@@ -102,7 +102,22 @@ disableChildWidget bin = do
 addNode :: Gui -> TreePath -> Scad -> IO()
 addNode gui path node = do
     let treeStore = _treeStore gui
-    treeStoreInsert treeStore path 0 node
+    let treeView = _treeView gui
+    treeStoreInsert treeStore path (-1) node
+    pathToNewElement <- pathToLastChild treeStore path
+    treeViewExpandToPath treeView pathToNewElement
+    sel <- treeViewGetSelection treeView
+    treeSelectionSelectPath sel pathToNewElement
+    
+pathToLastChild :: TreeStore a -> TreePath -> IO(TreePath)
+pathToLastChild treeStore parentPath = do
+    parentForest <- treeStoreGetTree treeStore parentPath
+    let children = subForest parentForest
+    let lastChild = (length children) -1
+    return (parentPath ++ [lastChild])
+    
+    
+ 
 
 deleteNode :: Gui -> TreePath -> IO()
 deleteNode gui path = do
@@ -110,8 +125,8 @@ deleteNode gui path = do
     treeStoreRemove treeStore path
     return () 
 
-mouseButtonPressed :: TimeStamp -> (Double, Double) -> Gui -> IO()
-mouseButtonPressed time pos gui = do
+handleMouseButtonPressed :: TimeStamp -> (Double, Double) -> Gui -> IO()
+handleMouseButtonPressed time pos gui = do
     let treeView = _treeView gui
     let treeStore = _treeStore gui
     let menuIORef = _menu gui
