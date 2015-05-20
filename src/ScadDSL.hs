@@ -1,5 +1,6 @@
 module ScadDSL
-( Scad(..)
+( Scad(..),
+  forestToStrings
 )
 where
 
@@ -25,5 +26,10 @@ type Y = Float
 type Z = Float
 
 
-forestToString :: Forest Scad -> [String]
-forestToString forest = undefined
+forestToStrings :: Forest Scad -> [String]
+forestToStrings forest = map treeToStrings forest
+
+treeToStrings :: Tree Scad -> String
+treeToStrings (Node (Cube size) xs) = "cube(" ++ show size ++ ");"
+treeToStrings (Node (Cylinder h r True) xs) =
+     "cylinder(" ++ show h ++ ", " ++ show r ++", center=True);"
