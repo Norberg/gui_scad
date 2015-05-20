@@ -1,6 +1,8 @@
 module ScadTreeView(
     createEmptyTreeStore,
-    createTreeView
+    createTreeView,
+    updateTreeStore,
+    emptyForest
 )
 where 
 
@@ -36,12 +38,19 @@ isScadNodeMovable _ = True
 
 createEmptyTreeStore :: IO (TreeStore Scad)
 createEmptyTreeStore = do
-    let tree = Node Root [Node (Sphere 1.0) [], Node (Cube 2.0) []]
-    let forest = [tree]
-    treeStore <- treeStoreNewDND forest 
+    treeStore <- treeStoreNewDND emptyForest
                         (Just treeStoreDragSourceIface)
                         (Just treeStoreDragDestIface) 
     return treeStore    
+
+emptyForest :: Forest Scad
+emptyForest = [Node Root []]
+
+updateTreeStore :: TreeStore Scad -> Forest Scad -> IO()
+updateTreeStore treeStore forest = do
+    treeStoreClear treeStore
+    treeStoreInsertForest treeStore [] 0 forest 
+
 
 createTreeView :: Gui -> IO(ConnectId TreeView)
 createTreeView gui = do

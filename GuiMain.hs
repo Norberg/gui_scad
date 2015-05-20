@@ -10,7 +10,12 @@ main = do
 
     builder <- builderNew
     builderAddFromFile builder "gui.glade"
+    treeStore <- createEmptyTreeStore
+    treeView <- builderGetObject builder castToTreeView "treeView"
+    menu <- newIORef Nothing
 
+    let gui = Gui builder treeStore treeView menu
+    
     winMain <- builderGetObject builder castToWindow "winMain"
     on winMain objectDestroy mainQuit
     
@@ -18,21 +23,24 @@ main = do
     on btnExit buttonActivated mainQuit
 
     btnSave <- builderGetObject builder castToButton "btnSave"
-    on btnSave buttonActivated (save builder)
-
-    treeStore <- createEmptyTreeStore
-    treeView <- builderGetObject builder castToTreeView "treeView"
-    menu <- newIORef Nothing
-
-    let gui = Gui builder treeStore treeView menu
+    on btnSave buttonActivated (handleSave gui)
     
+    btnOpen <- builderGetObject builder castToButton "btnOpen"
+    on btnOpen buttonActivated (handleOpen gui)
+
+    btnNew <- builderGetObject builder castToButton "btnNew"
+    on btnNew buttonActivated (handleNew gui)
+
     createTreeView gui
 
     widgetShowAll winMain
     mainGUI
 
-save :: Builder -> IO()
-save builder = do
+handleSave :: Gui -> IO()
+handleSave gui = do
+    let builder = _builder gui
+    let treeStore = _treeStore gui
+    scadTree <- treeStoreGetTree treeStore [0]
     putStrLn "Saving..."
     txtValue <- builderGetObject builder castToEntry "txtValue"
     valueString <- entryGetText txtValue
@@ -42,3 +50,16 @@ save builder = do
     valueName <- entryGetText txtName
     putStrLn valueName
 
+    writeFile "default.tree" (show scadTree)
+
+handleOpen :: Gui -> IO()
+handleOpen gui = do
+    let treeStore = _treeStore gui
+    fileContent <- readFile "default.tree"
+    let forest = read fileContent
+    updateTreeStore treeStore forest
+
+handleNew :: Gui -> IO()
+handleNew gui = do
+    let treeStore = _treeStore gui
+    updateTreeStore treeStore emptyForest
