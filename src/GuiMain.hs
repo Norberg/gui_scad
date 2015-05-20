@@ -9,7 +9,7 @@ main = do
     initGUI
 
     builder <- builderNew
-    builderAddFromFile builder "gui.glade"
+    builderAddFromFile builder "data/gui.glade"
     treeStore <- createEmptyTreeStore
     treeView <- builderGetObject builder castToTreeView "treeView"
     menu <- newIORef Nothing
