@@ -8,6 +8,7 @@ sudo: true
 
 install:
   - sudo apt-get install libgtk-3-dev
+  - cabal install Cabal
   - cabal install --only-dependencies --enable-tests
 
 notifications:
