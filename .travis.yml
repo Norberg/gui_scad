@@ -9,6 +9,7 @@ sudo: true
 install:
   - sudo apt-get install libgtk-3-dev
   - cabal install Cabal
+  - cabal install alex happy 
   - cabal install gtk2hs-buildtools
   - cabal install --only-dependencies --enable-tests
 
