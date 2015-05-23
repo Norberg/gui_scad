@@ -29,7 +29,7 @@ isMenuActionAllowed DeleteNode Root = False
 isMenuActionAllowed DeleteNode _ = True
 isMenuActionAllowed _ (Sphere _) = False 
 isMenuActionAllowed _ (Cube _) = False 
-isMenuActionAllowed _ (Cylinder _ _ _) = False 
+isMenuActionAllowed _ (Cylinder _ _ _ _) = False 
 isMenuActionAllowed _ _ = True
 
 isScadNodeMovable :: Scad -> Bool
@@ -151,23 +151,32 @@ handleMouseButtonPressed time pos gui = do
 
             let add3dObjectAllowed = isMenuActionAllowed Add3Object node
             subMenu <- createSubMenu menu "Add 3D Object" add3dObjectAllowed
-            addMenuItem subMenu "Sphere" True (addNode gui path (Sphere 1.0))
-            addMenuItem subMenu "Cube" True (addNode gui path (Cube 1.0))
-            addMenuItem subMenu "Cylinder" True (addNode gui path (Cylinder 1.0 1.0 True))
+            addMenuItem subMenu "Sphere" True 
+                (addNode gui path (Sphere (Radius 1.0)))
+            addMenuItem subMenu "Cube" True 
+                (addNode gui path (Cube 1.0))
+            addMenuItem subMenu "Cylinder" True 
+                (addNode gui path (Cylinder 1.0 (Radius 1.0) Nothing True))
 
             let addTransformationAllowed = isMenuActionAllowed AddTransformation node
             subMenu <- createSubMenu menu "Add Transformation" addTransformationAllowed
-            addMenuItem subMenu "Translate" True (addNode gui path (Translate 0 0 0))
-            addMenuItem subMenu "Rotate" True (addNode gui path (Rotate 0 0 0))
+            addMenuItem subMenu "Translate" True 
+                (addNode gui path (Translate 0 0 0))
+            addMenuItem subMenu "Rotate" True 
+                (addNode gui path (Rotate 0 0 0))
             
             let addBooleanAllowed = isMenuActionAllowed AddBooleanOperation node
             subMenu <- createSubMenu menu "Add Boolean Operation" addBooleanAllowed
-            addMenuItem subMenu "Union" True (addNode gui path (Union))
-            addMenuItem subMenu "Difference" True (addNode gui path (Difference)) 
-            addMenuItem subMenu "Intersection" True (addNode gui path (Intersection))
+            addMenuItem subMenu "Union" True 
+                (addNode gui path (Union))
+            addMenuItem subMenu "Difference" True 
+                (addNode gui path (Difference)) 
+            addMenuItem subMenu "Intersection" True 
+                (addNode gui path (Intersection))
 
             let deleteAllowed = isMenuActionAllowed DeleteNode node
-            addMenuItem menu "Delete Node" deleteAllowed (deleteNode gui path)
+            addMenuItem menu "Delete Node" deleteAllowed 
+                (deleteNode gui path)
 
             widgetShowAll menu
             menuPopup menu (Just (RightButton, time))
