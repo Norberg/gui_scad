@@ -154,7 +154,7 @@ handleMouseButtonPressed time pos gui = do
             addMenuItem subMenu "Sphere" True 
                 (addNode gui path (Sphere (Radius 1.0)))
             addMenuItem subMenu "Cube" True 
-                (addNode gui path (Cube 1.0))
+                (addNode gui path (Cube $ Size 1.0))
             addMenuItem subMenu "Cylinder" True 
                 (addNode gui path (Cylinder 1.0 (Radius 1.0) Nothing True))
 
