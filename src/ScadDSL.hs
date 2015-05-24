@@ -3,7 +3,7 @@ module ScadDSL
 ( Scad(..),
   Distance(..),
   CubeSize(..),
-  forestToStrings
+  forestToText
 )
 where
 
@@ -37,33 +37,33 @@ type Y = Float
 type Z = Float
 
 
-forestToStrings :: Forest Scad -> [T.Text]
-forestToStrings forest = map (toStrict . toLazyText . treeToStrings) forest
+forestToText :: Forest Scad -> T.Text
+forestToText forest = mconcat $ map (toStrict . toLazyText . buildTree) forest
 
 -- cube(size);
-treeToStrings :: Tree Scad -> Builder
-treeToStrings (Node (Cube size) tree) = "cube(" <> buildcubeSize size <> ");"
+buildTree :: Tree Scad -> Builder
+buildTree (Node (Cube size) tree) = "cube(" <> buildCubeSize size <> ");"
 
 -- cylinder(h, r|d, center);
-treeToStrings (Node (Cylinder h distance Nothing center) tree) =
+buildTree (Node (Cylinder h distance Nothing center) tree) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildSingleDistance distance <>
     ", center = " <> buildBool center <> ");"
 
 -- cylinder(h, r1|d1, r2|d2, center);
-treeToStrings (Node (Cylinder h distance1 (Just distance2) center) tree) =
+buildTree (Node (Cylinder h distance1 (Just distance2) center) tree) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildDistance1 distance1 <> 
     ", " <> buildDistance2 distance2 <> 
     ", center = " <> buildBool center <> ");"
 
 -- sphere(radius | d=diameter);
-treeToStrings (Node (Sphere distance) tree) =
+buildTree (Node (Sphere distance) tree) =
     "sphere(" <> buildSphereDistance distance <>
     ");"
 
 -- translate(x,y,z)
-treeToStrings (Node (Translate x y z) tree) =
+buildTree (Node (Translate x y z) tree) =
     "translate(" <> buildFloat x <>
     ", " <> buildFloat y <>
     ", " <> buildFloat z <>
@@ -85,9 +85,9 @@ buildDistance2 :: Distance -> Builder
 buildDistance2 (Radius r2) = "r2 = " <> buildFloat r2
 buildDistance2 (Diameter d2) = "d2 = " <> buildFloat d2
 
-buildcubeSize :: CubeSize -> Builder
-buildcubeSize (Size size) = buildFloat size
-buildcubeSize (Dimension width depth height) = 
+buildCubeSize :: CubeSize -> Builder
+buildCubeSize (Size size) = buildFloat size
+buildCubeSize (Dimension width depth height) = 
     "[" <> buildFloat width <>
     ", " <> buildFloat depth <>
     ", " <> buildFloat height <> 
