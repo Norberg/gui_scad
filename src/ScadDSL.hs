@@ -36,38 +36,62 @@ type X = Float
 type Y = Float
 type Z = Float
 
+indentStep = 4
 
 forestToText :: Forest Scad -> T.Text
-forestToText forest = mconcat $ map (toStrict . toLazyText . buildTree) forest
+forestToText forest = toStrict . toLazyText $ buildForest 0 forest
+
+buildForest :: Int -> Forest Scad -> Builder
+buildForest level forest = mconcat $ map (buildTree level) forest
+
+buildTree :: Int -> Tree Scad -> Builder
+buildTree level tree = 
+    indent level <> buildTree' level tree <> "\n"
+
+buildTree' :: Int -> Tree Scad -> Builder
+buildTree' level (Node (Root) forest) = buildForest level forest
 
 -- cube(size);
-buildTree :: Tree Scad -> Builder
-buildTree (Node (Cube size) tree) = "cube(" <> buildCubeSize size <> ");"
+buildTree' level (Node (Cube size) _) = "cube(" <> buildCubeSize size <> ");"
 
 -- cylinder(h, r|d, center);
-buildTree (Node (Cylinder h distance Nothing center) tree) =
+buildTree' level (Node (Cylinder h distance Nothing center) _) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildSingleDistance distance <>
     ", center = " <> buildBool center <> ");"
 
 -- cylinder(h, r1|d1, r2|d2, center);
-buildTree (Node (Cylinder h distance1 (Just distance2) center) tree) =
+buildTree' level (Node (Cylinder h distance1 (Just distance2) center) _) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildDistance1 distance1 <> 
     ", " <> buildDistance2 distance2 <> 
     ", center = " <> buildBool center <> ");"
 
 -- sphere(radius | d=diameter);
-buildTree (Node (Sphere distance) tree) =
+buildTree' level (Node (Sphere distance) _) =
     "sphere(" <> buildSphereDistance distance <>
     ");"
 
 -- translate(x,y,z)
-buildTree (Node (Translate x y z) tree) =
+buildTree' level (Node (Translate x y z) forest) =
     "translate(" <> buildFloat x <>
     ", " <> buildFloat y <>
     ", " <> buildFloat z <>
-    ");"
+    ")" <> buildBlock level forest
+
+
+indent :: Int -> Builder
+indent level = mconcat $ replicate (level * indentStep) " "
+
+buildBlock :: Int -> Forest Scad -> Builder
+buildBlock level [] = ";"
+buildBlock level forest =
+    "\n" <> 
+    indent level <> "{" <>
+    "\n" <>
+        buildForest (level + 1)forest <>
+    indent level <> "}"
+    
 
 buildSphereDistance :: Distance -> Builder
 buildSphereDistance (Radius r) = buildFloat r

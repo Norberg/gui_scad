@@ -1,8 +1,10 @@
 import Graphics.UI.Gtk
 import Data.IORef
+import qualified Data.Text.IO as T
 
 import Gui
 import ScadTreeView
+import ScadDSL
 
 main :: IO()
 main = do
@@ -50,7 +52,7 @@ handleSave gui = do
     valueName <- entryGetText txtName
     putStrLn valueName
 
-    writeFile "default.tree" (show scadTree)
+    T.writeFile "default.tree" $ forestToText [scadTree]
 
 handleOpen :: Gui -> IO()
 handleOpen gui = do
