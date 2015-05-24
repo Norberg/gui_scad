@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module ScadDSL
 ( Scad(..),
   Distance(..),
@@ -7,6 +8,12 @@ module ScadDSL
 where
 
 import Data.Tree
+import qualified Data.Text as T
+import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder
+import Data.Text.Lazy.Builder.RealFloat
+import Data.Monoid (mconcat, (<>))
+
 
 data Scad = Sphere Distance
           | Cube CubeSize
@@ -30,58 +37,65 @@ type Y = Float
 type Z = Float
 
 
-forestToStrings :: Forest Scad -> [String]
-forestToStrings forest = map treeToStrings forest
+forestToStrings :: Forest Scad -> [T.Text]
+forestToStrings forest = map (toStrict . toLazyText . treeToStrings) forest
 
 -- cube(size);
-treeToStrings :: Tree Scad -> String
-treeToStrings (Node (Cube size) tree) = "cube(" ++ cubeSizeToString size ++ ");"
+treeToStrings :: Tree Scad -> Builder
+treeToStrings (Node (Cube size) tree) = "cube(" <> buildcubeSize size <> ");"
 
 -- cylinder(h, r|d, center);
 treeToStrings (Node (Cylinder h distance Nothing center) tree) =
-    "cylinder(h = " ++ show h ++ 
-    ", " ++ singleDistanceToString distance ++ 
-    ", center = " ++ show center ++ ");"
+    "cylinder(h = " <> buildFloat h <> 
+    ", " <> buildSingleDistance distance <>
+    ", center = " <> buildBool center <> ");"
 
 -- cylinder(h, r1|d1, r2|d2, center);
 treeToStrings (Node (Cylinder h distance1 (Just distance2) center) tree) =
-    "cylinder(h = " ++ show h ++ 
-    ", " ++ distance1ToString distance1 ++ 
-    ", " ++ distance2ToString distance2 ++ 
-    ", center = " ++ show center ++ ");"
+    "cylinder(h = " <> buildFloat h <> 
+    ", " <> buildDistance1 distance1 <> 
+    ", " <> buildDistance2 distance2 <> 
+    ", center = " <> buildBool center <> ");"
 
 -- sphere(radius | d=diameter);
 treeToStrings (Node (Sphere distance) tree) =
-    "sphere(" ++ sphereDistanceToString distance ++
+    "sphere(" <> buildSphereDistance distance <>
     ");"
 
 -- translate(x,y,z)
 treeToStrings (Node (Translate x y z) tree) =
-    "translate(" ++ show x ++
-    ", " ++ show y ++
-    ", " ++ show z ++
+    "translate(" <> buildFloat x <>
+    ", " <> buildFloat y <>
+    ", " <> buildFloat z <>
     ");"
 
-sphereDistanceToString :: Distance -> String
-sphereDistanceToString (Radius r) = show r
-sphereDistanceToString (Diameter d) = "d = " ++ show d
+buildSphereDistance :: Distance -> Builder
+buildSphereDistance (Radius r) = buildFloat r
+buildSphereDistance (Diameter d) = "d = " <> buildFloat d
 
-singleDistanceToString :: Distance -> String
-singleDistanceToString (Radius r) = "r = " ++ show r
-singleDistanceToString (Diameter d) = "d = " ++ show d
+buildSingleDistance :: Distance -> Builder
+buildSingleDistance (Radius r) = "r = " <> buildFloat r
+buildSingleDistance (Diameter d) = "d = " <> buildFloat d
 
-distance1ToString :: Distance -> String
-distance1ToString (Radius r1) = "r1 = " ++ show r1
-distance1ToString (Diameter d1) = "d1 = " ++ show d1
+buildDistance1 :: Distance -> Builder
+buildDistance1 (Radius r1) = "r1 = " <> buildFloat r1
+buildDistance1 (Diameter d1) = "d1 = " <> buildFloat d1
 
-distance2ToString :: Distance -> String
-distance2ToString (Radius r2) = "r2 = " ++ show r2
-distance2ToString (Diameter d2) = "d2 = " ++ show d2
+buildDistance2 :: Distance -> Builder
+buildDistance2 (Radius r2) = "r2 = " <> buildFloat r2
+buildDistance2 (Diameter d2) = "d2 = " <> buildFloat d2
 
-cubeSizeToString :: CubeSize -> String
-cubeSizeToString (Size size) = show size
-cubeSizeToString (Dimension width depth height) = 
-    "[" ++ show width ++
-    ", " ++ show depth ++
-    ", " ++ show height ++
+buildcubeSize :: CubeSize -> Builder
+buildcubeSize (Size size) = buildFloat size
+buildcubeSize (Dimension width depth height) = 
+    "[" <> buildFloat width <>
+    ", " <> buildFloat depth <>
+    ", " <> buildFloat height <> 
     "]"
+
+buildFloat :: Float -> Builder
+buildFloat float = formatRealFloat Fixed Nothing float
+
+buildBool :: Bool -> Builder
+buildBool True = fromText "true" 
+buildBool False = fromText "false" 

@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
 module ScadDSLSpec where
 import Test.Hspec
 import Data.Tree
+import qualified Data.Text as T
 
 import ScadDSL
 
@@ -18,23 +20,23 @@ spec = do
         it "with r, center = True" $ do
             let forest = [Node (Cylinder 10.0 (Radius 2.0) Nothing True) []]
             forestToStrings forest `shouldBe`
-                ["cylinder(h = 10.0, r = 2.0, center = True);"]
+                ["cylinder(h = 10.0, r = 2.0, center = true);"]
         it "with d, center = false" $ do
             let forest = [Node (Cylinder 2.5 (Diameter 3.3) Nothing False) []]
             forestToStrings forest `shouldBe`
-                ["cylinder(h = 2.5, d = 3.3, center = False);"]
+                ["cylinder(h = 2.5, d = 3.3, center = false);"]
         it "with r1, r2, center = True" $ do
             let forest = [Node (Cylinder 2.5 (Radius 3.3) (Just $ Radius 4.5) True) []]
             forestToStrings forest `shouldBe`
-                ["cylinder(h = 2.5, r1 = 3.3, r2 = 4.5, center = True);"]
+                ["cylinder(h = 2.5, r1 = 3.3, r2 = 4.5, center = true);"]
         it "with d1, d2, center = False" $ do
             let forest = [Node (Cylinder 2.5 (Diameter 3.3) (Just $ Diameter 4.5) False) []]
             forestToStrings forest `shouldBe`
-                ["cylinder(h = 2.5, d1 = 3.3, d2 = 4.5, center = False);"]
+                ["cylinder(h = 2.5, d1 = 3.3, d2 = 4.5, center = false);"]
         it "with d1, r2, center = False" $ do
             let forest = [Node (Cylinder 2.5 (Diameter 3.3) (Just $ Radius 4.5) False) []]
             forestToStrings forest `shouldBe`
-                ["cylinder(h = 2.5, d1 = 3.3, r2 = 4.5, center = False);"]
+                ["cylinder(h = 2.5, d1 = 3.3, r2 = 4.5, center = false);"]
       context "single sphere" $ do
         it "with radius" $ do
             let forest = [Node (Sphere (Radius 2.0)) []]
