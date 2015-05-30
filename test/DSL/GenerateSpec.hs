@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module ScadDSLSpec where
+module DSL.GenerateSpec where
 import Test.Hspec
 import Data.Tree
 
