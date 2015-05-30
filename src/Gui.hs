@@ -8,7 +8,7 @@ where
 import Data.IORef
 import Graphics.UI.Gtk
 
-import ScadDSL
+import DSL.Scad
 
 data Gui = Gui
     {

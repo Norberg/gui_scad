@@ -3,7 +3,8 @@ module ScadDSLSpec where
 import Test.Hspec
 import Data.Tree
 
-import ScadDSL
+import DSL.Scad
+import DSL.Generate
 
 spec :: Spec
 spec = do

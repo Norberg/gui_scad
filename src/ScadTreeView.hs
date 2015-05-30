@@ -14,7 +14,7 @@ import Graphics.UI.Gtk
 
 import Control.Monad.IO.Class (liftIO)
 
-import ScadDSL
+import DSL.Scad
 import Gui
 
 data MenuAction = Add3Object 

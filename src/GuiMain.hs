@@ -4,7 +4,8 @@ import qualified Data.Text.IO as T
 
 import Gui
 import ScadTreeView
-import ScadDSL
+import DSL.Scad
+import DSL.Generate
 
 main :: IO()
 main = do
