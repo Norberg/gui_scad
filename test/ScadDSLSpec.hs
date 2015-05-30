@@ -2,7 +2,6 @@
 module ScadDSLSpec where
 import Test.Hspec
 import Data.Tree
-import qualified Data.Text as T
 
 import ScadDSL
 
@@ -52,6 +51,38 @@ spec = do
             let forest = [Node (Translate 1.0 2.0 3.0) [Node (Translate 4.0 5.0 6.0) []]]
             forestToText forest `shouldBe`
                 "translate(1.0, 2.0, 3.0)\n{\n    translate(4.0, 5.0, 6.0);\n}\n"
+      context "rotate" $ do
+        it "single rotate" $ do
+            let forest = [Node (Rotate 1.0 2.0 3.0) []]
+            forestToText forest `shouldBe` "rotate(1.0, 2.0, 3.0);\n"
+        it "nested rotate" $ do
+            let forest = [Node (Rotate 1.0 2.0 3.0) [Node (Rotate 4.0 5.0 6.0) []]]
+            forestToText forest `shouldBe`
+                "rotate(1.0, 2.0, 3.0)\n{\n    rotate(4.0, 5.0, 6.0);\n}\n"
+      context "union" $ do
+        it "single union" $ do
+            let forest = [Node Union []]
+            forestToText forest `shouldBe` "union();\n"
+        it "nested union" $ do
+            let forest = [Node Union [Node Union []]]
+            forestToText forest `shouldBe`
+                "union()\n{\n    union();\n}\n"
+      context "difference" $ do
+        it "single difference" $ do
+            let forest = [Node Difference []]
+            forestToText forest `shouldBe` "difference();\n"
+        it "nested difference" $ do
+            let forest = [Node Difference [Node Difference []]]
+            forestToText forest `shouldBe`
+                "difference()\n{\n    difference();\n}\n"
+      context "intersection" $ do
+        it "single intersection" $ do
+            let forest = [Node Intersection []]
+            forestToText forest `shouldBe` "intersection();\n"
+        it "nested intersection" $ do
+            let forest = [Node Intersection [Node Intersection []]]
+            forestToText forest `shouldBe`
+                "intersection()\n{\n    intersection();\n}\n"
 
 main :: IO ()
 main = hspec spec

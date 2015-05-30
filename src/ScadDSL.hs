@@ -36,6 +36,7 @@ type X = Float
 type Y = Float
 type Z = Float
 
+indentStep :: Int
 indentStep = 4
 
 forestToText :: Forest Scad -> T.Text
@@ -52,23 +53,23 @@ buildTree' :: Int -> Tree Scad -> Builder
 buildTree' level (Node (Root) forest) = buildForest level forest
 
 -- cube(size);
-buildTree' level (Node (Cube size) _) = "cube(" <> buildCubeSize size <> ");"
+buildTree' _ (Node (Cube size) _) = "cube(" <> buildCubeSize size <> ");"
 
 -- cylinder(h, r|d, center);
-buildTree' level (Node (Cylinder h distance Nothing center) _) =
+buildTree' _ (Node (Cylinder h distance Nothing center) _) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildSingleDistance distance <>
     ", center = " <> buildBool center <> ");"
 
 -- cylinder(h, r1|d1, r2|d2, center);
-buildTree' level (Node (Cylinder h distance1 (Just distance2) center) _) =
+buildTree' _ (Node (Cylinder h distance1 (Just distance2) center) _) =
     "cylinder(h = " <> buildFloat h <> 
     ", " <> buildDistance1 distance1 <> 
     ", " <> buildDistance2 distance2 <> 
     ", center = " <> buildBool center <> ");"
 
 -- sphere(radius | d=diameter);
-buildTree' level (Node (Sphere distance) _) =
+buildTree' _ (Node (Sphere distance) _) =
     "sphere(" <> buildSphereDistance distance <>
     ");"
 
@@ -79,12 +80,30 @@ buildTree' level (Node (Translate x y z) forest) =
     ", " <> buildFloat z <>
     ")" <> buildBlock level forest
 
+-- rotate(x,y,z)
+buildTree' level (Node (Rotate x y z) forest) =
+    "rotate(" <> buildFloat x <>
+    ", " <> buildFloat y <>
+    ", " <> buildFloat z <>
+    ")" <> buildBlock level forest
+
+-- union()
+buildTree' level (Node Union forest) =
+    "union()" <> buildBlock level forest
+
+-- difference()
+buildTree' level (Node Difference forest) =
+    "difference()" <> buildBlock level forest
+
+-- intersection()
+buildTree' level (Node Intersection forest) =
+    "intersection()" <> buildBlock level forest
 
 indent :: Int -> Builder
 indent level = mconcat $ replicate (level * indentStep) " "
 
 buildBlock :: Int -> Forest Scad -> Builder
-buildBlock level [] = ";"
+buildBlock _ [] = ";"
 buildBlock level forest =
     "\n" <> 
     indent level <> "{" <>
