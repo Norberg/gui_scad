@@ -6,14 +6,6 @@ module DSL.Scad
 )
 where
 
-import Data.Tree
-import qualified Data.Text as T
-import Data.Text.Lazy (toStrict)
-import Data.Text.Lazy.Builder
-import Data.Text.Lazy.Builder.RealFloat
-import Data.Monoid (mconcat, (<>))
-
-
 data Scad = Sphere Distance
           | Cube CubeSize
           | Cylinder Height Distance (Maybe Distance) Center
