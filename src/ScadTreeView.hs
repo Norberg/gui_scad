@@ -4,7 +4,7 @@ module ScadTreeView(
     updateTreeStore,
     emptyForest
 )
-where 
+where
 
 import Data.Tree
 import Data.IORef
@@ -17,9 +17,9 @@ import Control.Monad.IO.Class (liftIO)
 import DSL.Scad
 import Gui
 
-data MenuAction = Add3Object 
+data MenuAction = Add3Object
                 | AddTransformation
-                | AddBooleanOperation 
+                | AddBooleanOperation
                 | DeleteNode
                 | Move
 
@@ -27,9 +27,9 @@ data MenuAction = Add3Object
 isMenuActionAllowed :: MenuAction -> Scad -> Bool
 isMenuActionAllowed DeleteNode Root = False
 isMenuActionAllowed DeleteNode _ = True
-isMenuActionAllowed _ (Sphere _) = False 
-isMenuActionAllowed _ (Cube _) = False 
-isMenuActionAllowed _ (Cylinder _ _ _ _) = False 
+isMenuActionAllowed _ (Sphere _) = False
+isMenuActionAllowed _ (Cube _) = False
+isMenuActionAllowed _ (Cylinder _ _ _ _) = False
 isMenuActionAllowed _ _ = True
 
 isScadNodeMovable :: Scad -> Bool
@@ -40,8 +40,8 @@ createEmptyTreeStore :: IO (TreeStore Scad)
 createEmptyTreeStore = do
     treeStore <- treeStoreNewDND emptyForest
                         (Just treeStoreDragSourceIface)
-                        (Just treeStoreDragDestIface) 
-    return treeStore    
+                        (Just treeStoreDragDestIface)
+    return treeStore
 
 emptyForest :: Forest Scad
 emptyForest = [Node Root []]
@@ -49,7 +49,7 @@ emptyForest = [Node Root []]
 updateTreeStore :: TreeStore Scad -> Forest Scad -> IO()
 updateTreeStore treeStore forest = do
     treeStoreClear treeStore
-    treeStoreInsertForest treeStore [] 0 forest 
+    treeStoreInsertForest treeStore [] 0 forest
 
 
 createTreeView :: Gui -> IO(ConnectId TreeView)
@@ -86,9 +86,9 @@ createSubMenu parentMenu label enabled = do
             menuItemSetSubmenu menuItem subMenu
         False -> do
             disableChildWidget menuItem
-            
+
     return subMenu
-            
+
 addMenuItem :: Menu -> String -> Bool -> IO() -> IO()
 addMenuItem menu label enabled callback = do
     menuItem <- menuItemNewWithLabel label
@@ -104,7 +104,7 @@ disableChildWidget :: BinClass bin => bin -> IO()
 disableChildWidget bin = do
     maybeWidget  <- binGetChild bin
     case maybeWidget of
-        Just widget -> do       
+        Just widget -> do
             widgetSetSensitive widget False
         Nothing -> return ()
 
@@ -117,22 +117,22 @@ addNode gui path node = do
     treeViewExpandToPath treeView pathToNewElement
     sel <- treeViewGetSelection treeView
     treeSelectionSelectPath sel pathToNewElement
-    
+
 pathToLastChild :: TreeStore a -> TreePath -> IO(TreePath)
 pathToLastChild treeStore parentPath = do
     parentForest <- treeStoreGetTree treeStore parentPath
     let children = subForest parentForest
     let lastChild = (length children) -1
     return (parentPath ++ [lastChild])
-    
-    
- 
+
+
+
 
 deleteNode :: Gui -> TreePath -> IO()
 deleteNode gui path = do
     let treeStore = _treeStore gui
     treeStoreRemove treeStore path
-    return () 
+    return ()
 
 handleMouseButtonPressed :: TimeStamp -> (Double, Double) -> Gui -> IO()
 handleMouseButtonPressed time pos gui = do
@@ -144,38 +144,38 @@ handleMouseButtonPressed time pos gui = do
     sel <- treeViewGetSelection treeView
     case pathInfo of
         Just (path, _, _) -> do
-            treeSelectionSelectPath sel path 
+            treeSelectionSelectPath sel path
             node <- treeStoreGetValue treeStore path
             menu <- menuNew
             writeIORef menuIORef (Just menu)
 
             let add3dObjectAllowed = isMenuActionAllowed Add3Object node
             subMenu <- createSubMenu menu "Add 3D Object" add3dObjectAllowed
-            addMenuItem subMenu "Sphere" True 
+            addMenuItem subMenu "Sphere" True
                 (addNode gui path (Sphere (Radius 1.0)))
-            addMenuItem subMenu "Cube" True 
+            addMenuItem subMenu "Cube" True
                 (addNode gui path (Cube $ Size 1.0))
-            addMenuItem subMenu "Cylinder" True 
+            addMenuItem subMenu "Cylinder" True
                 (addNode gui path (Cylinder 1.0 (Radius 1.0) Nothing True))
 
             let addTransformationAllowed = isMenuActionAllowed AddTransformation node
             subMenu <- createSubMenu menu "Add Transformation" addTransformationAllowed
-            addMenuItem subMenu "Translate" True 
+            addMenuItem subMenu "Translate" True
                 (addNode gui path (Translate 0 0 0))
-            addMenuItem subMenu "Rotate" True 
+            addMenuItem subMenu "Rotate" True
                 (addNode gui path (Rotate 0 0 0))
-            
+
             let addBooleanAllowed = isMenuActionAllowed AddBooleanOperation node
             subMenu <- createSubMenu menu "Add Boolean Operation" addBooleanAllowed
-            addMenuItem subMenu "Union" True 
+            addMenuItem subMenu "Union" True
                 (addNode gui path (Union))
-            addMenuItem subMenu "Difference" True 
-                (addNode gui path (Difference)) 
-            addMenuItem subMenu "Intersection" True 
+            addMenuItem subMenu "Difference" True
+                (addNode gui path (Difference))
+            addMenuItem subMenu "Intersection" True
                 (addNode gui path (Intersection))
 
             let deleteAllowed = isMenuActionAllowed DeleteNode node
-            addMenuItem menu "Delete Node" deleteAllowed 
+            addMenuItem menu "Delete Node" deleteAllowed
                 (deleteNode gui path)
 
             widgetShowAll menu
@@ -212,7 +212,7 @@ treeStoreDragDestIface = DragDestIface {
         mModelPath <- treeGetRowDragData
         case mModelPath of
             Nothing -> return False
-            Just (model', source) -> 
+            Just (model', source) ->
                 if (toTreeModel model/=toTreeModel model') then return False
                 else liftIO $ do
                     case (init dest) of
@@ -234,4 +234,3 @@ treeStoreDragDestIface = DragDestIface {
             treeStoreInsertTree model (init dest) (last dest) row
             return True
   }
-

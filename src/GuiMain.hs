@@ -4,7 +4,6 @@ import qualified Data.Text.IO as T
 
 import Gui
 import ScadTreeView
-import DSL.Scad
 import DSL.Generate
 
 main :: IO()
@@ -18,16 +17,16 @@ main = do
     menu <- newIORef Nothing
 
     let gui = Gui builder treeStore treeView menu
-    
+
     winMain <- builderGetObject builder castToWindow "winMain"
     on winMain objectDestroy mainQuit
-    
+
     btnExit <- builderGetObject builder castToButton "btnExit"
     on btnExit buttonActivated mainQuit
 
     btnSave <- builderGetObject builder castToButton "btnSave"
     on btnSave buttonActivated (handleSave gui)
-    
+
     btnOpen <- builderGetObject builder castToButton "btnOpen"
     on btnOpen buttonActivated (handleOpen gui)
 
