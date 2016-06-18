@@ -6,9 +6,9 @@ module ScadTreeView(
 )
 where
 
-import Data.Tree
 import Data.IORef
 import Data.List
+import Data.Tree
 
 import Graphics.UI.Gtk
 
@@ -29,7 +29,7 @@ isMenuActionAllowed DeleteNode Root = False
 isMenuActionAllowed DeleteNode _ = True
 isMenuActionAllowed _ (Sphere _) = False
 isMenuActionAllowed _ (Cube _) = False
-isMenuActionAllowed _ (Cylinder _ _ _ _) = False
+isMenuActionAllowed _ Cylinder {} = False
 isMenuActionAllowed _ _ = True
 
 isScadNodeMovable :: Scad -> Bool
@@ -37,11 +37,10 @@ isScadNodeMovable Root = False
 isScadNodeMovable _ = True
 
 createEmptyTreeStore :: IO (TreeStore Scad)
-createEmptyTreeStore = do
-    treeStore <- treeStoreNewDND emptyForest
-                        (Just treeStoreDragSourceIface)
-                        (Just treeStoreDragDestIface)
-    return treeStore
+createEmptyTreeStore =
+    treeStoreNewDND emptyForest
+        (Just treeStoreDragSourceIface)
+        (Just treeStoreDragDestIface)
 
 emptyForest :: Forest Scad
 emptyForest = [Node Root []]
@@ -63,7 +62,7 @@ createTreeView gui = do
     renderer <- cellRendererTextNew
     cellLayoutPackStart col renderer False
     cellLayoutSetAttributes col renderer treeStore
-           $ \ind -> [cellText := show(ind)]
+           $ \ind -> [cellText := show ind]
     treeViewAppendColumn treeView col
     treeSelection <- treeViewGetSelection treeView
     treeSelectionSetMode treeSelection  SelectionSingle
@@ -76,16 +75,15 @@ createTreeView gui = do
                                                     _ -> stopEvent
                                             ))
 
-createSubMenu :: Menu -> String -> Bool -> IO(Menu)
+createSubMenu :: Menu -> String -> Bool -> IO Menu
 createSubMenu parentMenu label enabled = do
     menuItem <- menuItemNewWithLabel label
     menuShellAppend parentMenu menuItem
     subMenu <- menuNew
-    case enabled of
-        True -> do
-            menuItemSetSubmenu menuItem subMenu
-        False -> do
-            disableChildWidget menuItem
+    if enabled then
+        menuItemSetSubmenu menuItem subMenu
+    else
+        disableChildWidget menuItem
 
     return subMenu
 
@@ -93,18 +91,17 @@ addMenuItem :: Menu -> String -> Bool -> IO() -> IO()
 addMenuItem menu label enabled callback = do
     menuItem <- menuItemNewWithLabel label
     menuShellAppend menu menuItem
-    case enabled of
-        True -> do
+    if enabled then do
             on menuItem menuItemActivated callback
             return ()
-        False -> do
+    else
             disableChildWidget menuItem
 
 disableChildWidget :: BinClass bin => bin -> IO()
 disableChildWidget bin = do
     maybeWidget  <- binGetChild bin
     case maybeWidget of
-        Just widget -> do
+        Just widget ->
             widgetSetSensitive widget False
         Nothing -> return ()
 
@@ -118,11 +115,11 @@ addNode gui path node = do
     sel <- treeViewGetSelection treeView
     treeSelectionSelectPath sel pathToNewElement
 
-pathToLastChild :: TreeStore a -> TreePath -> IO(TreePath)
+pathToLastChild :: TreeStore a -> TreePath -> IO TreePath
 pathToLastChild treeStore parentPath = do
     parentForest <- treeStoreGetTree treeStore parentPath
     let children = subForest parentForest
-    let lastChild = (length children) -1
+    let lastChild = length children -1
     return (parentPath ++ [lastChild])
 
 
@@ -168,11 +165,11 @@ handleMouseButtonPressed time pos gui = do
             let addBooleanAllowed = isMenuActionAllowed AddBooleanOperation node
             subMenu <- createSubMenu menu "Add Boolean Operation" addBooleanAllowed
             addMenuItem subMenu "Union" True
-                (addNode gui path (Union))
+                (addNode gui path Union)
             addMenuItem subMenu "Difference" True
-                (addNode gui path (Difference))
+                (addNode gui path Difference)
             addMenuItem subMenu "Intersection" True
-                (addNode gui path (Intersection))
+                (addNode gui path Intersection)
 
             let deleteAllowed = isMenuActionAllowed DeleteNode node
             addMenuItem menu "Delete Node" deleteAllowed
@@ -190,7 +187,7 @@ nodeSelected treeStore treeSelection = do
         Just treeIter -> do
             treePath <- treeModelGetPath treeStore treeIter
             value <- treeStoreGetValue treeStore treePath
-            putStrLn $ "Selected node:" ++ show (value)
+            putStrLn $ "Selected node:" ++ show value
         Nothing -> return ()
 
 
@@ -213,11 +210,11 @@ treeStoreDragDestIface = DragDestIface {
         case mModelPath of
             Nothing -> return False
             Just (model', source) ->
-                if (toTreeModel model/=toTreeModel model') then return False
-                else liftIO $ do
-                    case (init dest) of
-                        (_:_) -> do
-                            if (isPrefixOf source dest) then return False
+                if toTreeModel model/=toTreeModel model' then return False
+                else liftIO $
+                    case init dest of
+                        (_:_) ->
+                            if source `isPrefixOf` dest then return False
                             else do
                                 valueParrentDest <- treeStoreGetValue model (init dest)
                                 return (isMenuActionAllowed Move valueParrentDest)

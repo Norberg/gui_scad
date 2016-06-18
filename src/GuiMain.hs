@@ -9,7 +9,7 @@ import DSL.Generate
 main :: IO()
 main = do
     initGUI
-
+    
     builder <- builderNew
     builderAddFromFile builder "data/gui.glade"
     treeStore <- createEmptyTreeStore

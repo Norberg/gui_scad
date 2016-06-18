@@ -18,7 +18,7 @@ data Gui = Gui
         _menu :: IORef (Maybe Menu) -- Hack to make sure that the GC(?) will not remove the menu when used
     }
 
-getTreeModel :: Gui -> IO(TreeModel)
+getTreeModel :: Gui -> IO TreeModel
 getTreeModel gui = do
     let treeView = _treeView gui
     maybeModel <- treeViewGetModel treeView

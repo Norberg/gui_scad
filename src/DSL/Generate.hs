@@ -24,26 +24,26 @@ buildForest :: Int -> Forest Scad -> Builder
 buildForest level forest = mconcat $ map (buildTree level) forest
 
 buildTree :: Int -> Tree Scad -> Builder
-buildTree level tree = 
+buildTree level tree =
     indent level <> buildTree' level tree <> "\n"
 
 buildTree' :: Int -> Tree Scad -> Builder
-buildTree' level (Node (Root) forest) = buildForest level forest
+buildTree' level (Node Root forest) = buildForest level forest
 
 -- cube(size);
 buildTree' _ (Node (Cube size) _) = "cube(" <> buildCubeSize size <> ");"
 
 -- cylinder(h, r|d, center);
 buildTree' _ (Node (Cylinder h distance Nothing center) _) =
-    "cylinder(h = " <> buildFloat h <> 
+    "cylinder(h = " <> buildFloat h <>
     ", " <> buildSingleDistance distance <>
     ", center = " <> buildBool center <> ");"
 
 -- cylinder(h, r1|d1, r2|d2, center);
 buildTree' _ (Node (Cylinder h distance1 (Just distance2) center) _) =
-    "cylinder(h = " <> buildFloat h <> 
-    ", " <> buildDistance1 distance1 <> 
-    ", " <> buildDistance2 distance2 <> 
+    "cylinder(h = " <> buildFloat h <>
+    ", " <> buildDistance1 distance1 <>
+    ", " <> buildDistance2 distance2 <>
     ", center = " <> buildBool center <> ");"
 
 -- sphere(radius | d=diameter);
@@ -83,12 +83,12 @@ indent level = mconcat $ replicate (level * indentStep) " "
 buildBlock :: Int -> Forest Scad -> Builder
 buildBlock _ [] = ";"
 buildBlock level forest =
-    "\n" <> 
+    "\n" <>
     indent level <> "{" <>
     "\n" <>
         buildForest (level + 1)forest <>
     indent level <> "}"
-    
+
 
 buildSphereDistance :: Distance -> Builder
 buildSphereDistance (Radius r) = buildFloat r
@@ -108,15 +108,15 @@ buildDistance2 (Diameter d2) = "d2 = " <> buildFloat d2
 
 buildCubeSize :: CubeSize -> Builder
 buildCubeSize (Size size) = buildFloat size
-buildCubeSize (Dimension width depth height) = 
+buildCubeSize (Dimension width depth height) =
     "[" <> buildFloat width <>
     ", " <> buildFloat depth <>
-    ", " <> buildFloat height <> 
+    ", " <> buildFloat height <>
     "]"
 
 buildFloat :: Float -> Builder
-buildFloat float = formatRealFloat Fixed Nothing float
+buildFloat = formatRealFloat Fixed Nothing
 
 buildBool :: Bool -> Builder
-buildBool True = fromText "true" 
-buildBool False = fromText "false" 
+buildBool True = fromText "true"
+buildBool False = fromText "false"

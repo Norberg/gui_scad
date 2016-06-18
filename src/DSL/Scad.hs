@@ -17,7 +17,7 @@ data Scad = Sphere Distance
           | Root deriving(Show, Read)
 
 
-data CubeSize = Size Float | Dimension Width Depth Height deriving(Show, Read) 
+data CubeSize = Size Float | Dimension Width Depth Height deriving(Show, Read)
 data Distance = Radius Float | Diameter Float deriving(Show, Read)
 type Width = Float
 type Height = Float
